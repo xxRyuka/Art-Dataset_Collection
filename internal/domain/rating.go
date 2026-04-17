@@ -47,7 +47,7 @@ type RatingRepository interface {
 	// Bu iki işlem tek bir transaction içinde gerçekleştirilir.
 	Create(ctx context.Context, rating *Rating) error
 	GetAllExports(ctx context.Context) ([]RatingExport, error)
-	GetScoreDistribution(ctx context.Context) ([]ScoreDistribution, error)
+	GetDashboardStats(ctx context.Context) (*DashboardStats, error)
 }
 
 // ─── ADMIN DASHBOARD DTOs ────────────────────────────────────────
@@ -69,6 +69,22 @@ type RatingExport struct {
 type ScoreDistribution struct {
 	Score int `json:"score"`
 	Count int `json:"count"`
+}
+
+// GenderDistribution, cinsiyet dağılımı için
+type GenderDistribution struct {
+	Gender string `json:"gender"`
+	Count  int    `json:"count"`
+}
+
+// DashboardStats, admin panelindeki tüm grafikleri ve sayaçları besler
+type DashboardStats struct {
+	TotalParticipants  int                 `json:"total_participants"`
+	TotalRatings       int                 `json:"total_ratings"`
+	KnowsArtistCount   int                 `json:"knows_artist_count"`
+	FollowsArtistCount int                 `json:"follows_artist_count"`
+	ScoreDistribution  []ScoreDistribution `json:"score_distribution"`
+	GenderDistribution []GenderDistribution `json:"gender_distribution"`
 }
 
 // ──────────────────────────────────────────────────────────────

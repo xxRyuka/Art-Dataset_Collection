@@ -79,9 +79,9 @@ func NewRatingUseCase(ratingRepo domain.RatingRepository) *RatingUseCase {
 	return &RatingUseCase{ratingRepo: ratingRepo}
 }
 
-// GetScoreDistribution, puan dağılımını döndürür (grafik için).
-func (uc *RatingUseCase) GetScoreDistribution(ctx context.Context) ([]domain.ScoreDistribution, error) {
-	return uc.ratingRepo.GetScoreDistribution(ctx)
+// GetDashboardStats, tüm panelleri besleyecek verileri döndürür.
+func (uc *RatingUseCase) GetDashboardStats(ctx context.Context) (*domain.DashboardStats, error) {
+	return uc.ratingRepo.GetDashboardStats(ctx)
 }
 
 // GetAllExports, veriyi CSV olarak dışa aktarılacak formda döner.

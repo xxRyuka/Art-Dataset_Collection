@@ -18,17 +18,17 @@ func NewAdminHandler(ratingUC *usecase.RatingUseCase) *AdminHandler {
 	return &AdminHandler{ratingUC: ratingUC}
 }
 
-// GetChartData returns the score distribution in JSON format.
+// GetChartData returns the full dashboard stats in JSON format.
 func (h *AdminHandler) GetChartData(c *gin.Context) {
 	ctx := c.Request.Context()
 
-	dist, err := h.ratingUC.GetScoreDistribution(ctx)
+	stats, err := h.ratingUC.GetDashboardStats(ctx)
 	if err != nil {
 		respondWithError(c, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, dist)
+	c.JSON(http.StatusOK, stats)
 }
 
 // ExportCSV streams the database ratings directly as a CSV file to the client.

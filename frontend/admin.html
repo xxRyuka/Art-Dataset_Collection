@@ -156,6 +156,53 @@
             gap: 16px;
         }
 
+        /* ─── METRICS GRID ───────────────────────────────────── */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(minmax(150px, 1fr));
+            grid-auto-flow: column;
+            gap: 16px;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .metric-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-light);
+            line-height: 1.2;
+        }
+
+        .metric-lbl {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ─── CHARTS GRID ───────────────────────────────────── */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+        }
+        @media (min-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 2fr 1fr;
+            }
+        }
+
     </style>
 </head>
 
@@ -166,7 +213,7 @@
             <div class="header card">
                 <div>
                     <h1 class="title">Admin Paneli</h1>
-                    <p class="subtitle">Genel Puanlama İstatistikleri</p>
+                    <p class="subtitle">Canlı Yönetim ve İstatistik Merkezi</p>
                 </div>
                 <div>
                     <button class="btn" onclick="exportCSV()">
@@ -180,10 +227,39 @@
                 </div>
             </div>
 
-            <div class="card">
-                <h2 class="title" style="font-size: 18px; margin-bottom: 24px;">Puan Dağılımı (1 - 10)</h2>
-                <div class="chart-wrap">
-                    <canvas id="scoreChart"></canvas>
+            <!-- METRICS -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-val" id="val-participants">-</div>
+                    <div class="metric-lbl">Katılımcı (Tahmini)</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val" id="val-ratings">-</div>
+                    <div class="metric-lbl">Toplam Oy</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val" id="val-knows">-</div>
+                    <div class="metric-lbl">Sanatçıyı Tanıyan</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-val" id="val-follows">-</div>
+                    <div class="metric-lbl">Sanatçıyı Takip Eden</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="card">
+                    <h2 class="title" style="font-size: 18px; margin-bottom: 24px;">Puan Dağılımı (1 - 10)</h2>
+                    <div class="chart-wrap" style="height: 300px;">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="title" style="font-size: 18px; margin-bottom: 24px;">Cinsiyet Dağılımı</h2>
+                    <div class="chart-wrap" style="height: 300px;">
+                        <canvas id="genderChart"></canvas>
+                    </div>
                 </div>
             </div>
             
@@ -197,6 +273,7 @@
         const API_KEY = 'ArtSurvey2024Gizli';
 
         let chartInstance = null;
+        let genderChartInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadChartData();
@@ -211,7 +288,21 @@
                 if (!res.ok) throw new Error(`API Hatası: ${res.status}`);
 
                 const data = await res.json();
-                renderChart(data);
+                
+                // Set metrics
+                document.getElementById('val-participants').innerText = data.total_participants || 0;
+                document.getElementById('val-ratings').innerText = data.total_ratings || 0;
+                
+                // Format knowing/following as percentages if there are ratings
+                const total = data.total_ratings || 1;
+                const knowsPct = ((data.knows_artist_count || 0) / total * 100).toFixed(1) + '%';
+                const followsPct = ((data.follows_artist_count || 0) / total * 100).toFixed(1) + '%';
+
+                document.getElementById('val-knows').innerText = knowsPct;
+                document.getElementById('val-follows').innerText = followsPct;
+
+                renderScoreChart(data.score_distribution);
+                renderGenderChart(data.gender_distribution);
 
             } catch (err) {
                 console.error("Grafik verileri yüklenemedi", err);
@@ -219,14 +310,14 @@
             }
         }
 
-        function renderChart(data) {
+        function renderScoreChart(scoreData) {
             // data array like [{score: 1, count: 5}, {score: 2, count: 12}]
             // Biz hepsini 1'den 10'a kadar dolduralım, boş olanları 0 gösterelim
             const labels = Array.from({length: 10}, (_, i) => i + 1);
             const counts = new Array(10).fill(0);
 
-            if (data && Array.isArray(data)) {
-                data.forEach(item => {
+            if (scoreData && Array.isArray(scoreData)) {
+                scoreData.forEach(item => {
                     if (item.score >= 1 && item.score <= 10) {
                         counts[item.score - 1] = item.count;
                     }
@@ -244,7 +335,7 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Kullanıcı Oyları',
+                        label: 'Verilen Oylar',
                         data: counts,
                         backgroundColor: 'rgba(124, 58, 237, 0.6)',
                         borderColor: 'rgba(167, 139, 250, 1)',
@@ -277,11 +368,61 @@
                     },
                     plugins: {
                         legend: {
-                            labels: {
-                                color: '#f1f5f9'
-                            }
+                            display: false
                         }
                     }
+                }
+            });
+        }
+
+        function renderGenderChart(genderData) {
+            const labelMap = {
+                'male': 'Erkek',
+                'female': 'Kadın',
+                'other': 'Diğer',
+                'prefer_not_to_say': 'Belirtilmedi'
+            };
+
+            const labels = [];
+            const counts = [];
+            const colors = ['#3b82f6', '#ec4899', '#10b981', '#64748b'];
+
+            if (genderData && Array.isArray(genderData)) {
+                genderData.forEach(item => {
+                    labels.push(labelMap[item.gender] || item.gender);
+                    counts.push(item.count);
+                });
+            }
+
+            const ctx = document.getElementById('genderChart').getContext('2d');
+            
+            if (genderChartInstance) {
+                genderChartInstance.destroy();
+            }
+
+            genderChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: counts,
+                        backgroundColor: colors,
+                        borderWidth: 0,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#f1f5f9',
+                                padding: 20
+                            }
+                        }
+                    },
+                    cutout: '70%'
                 }
             });
         }

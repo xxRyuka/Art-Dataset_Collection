@@ -139,27 +139,74 @@ func (r *ratingRepository) GetAllExports(ctx context.Context) ([]domain.RatingEx
 	return exports, nil
 }
 
-// GetScoreDistribution, 1'den 10'a kadar oyların dağılımını hesaplar.
-func (r *ratingRepository) GetScoreDistribution(ctx context.Context) ([]domain.ScoreDistribution, error) {
-	const query = `
+// GetDashboardStats, tüm admin dashboard metriklerini tek seferde hesaplar.
+func (r *ratingRepository) GetDashboardStats(ctx context.Context) (*domain.DashboardStats, error) {
+	stats := &domain.DashboardStats{}
+
+	// 1. Toplam Puanlama Sayısı, Knows/Follows sayıları puan başına (her kayıt bir puanlamadır, dolayısıyla toplam rating sayısı)
+	// NOT: "Kac kisi katilmis" sorusunun tam cevabını bulmak cookie tabanlı olmadığı için zordur ancak basitçe toplam satır / 10 veya toplam tekil kombinasyon olabilir.
+	// Biz burada oyların %10'u gibi bir kaba tahmin veya sadece total_ratings göstereceğiz. "Session" ID olmadığı için, TotalRatings üzerinden gösterim yapılır.
+	const summaryQuery = `
+		SELECT 
+			COUNT(*) as total_ratings,
+			COUNT(*) FILTER (WHERE knows_artist = TRUE) as knows_artist_count,
+			COUNT(*) FILTER (WHERE follows_artist = TRUE) as follows_artist_count
+		FROM ratings
+	`
+	err := r.db.QueryRow(ctx, summaryQuery).Scan(
+		&stats.TotalRatings,
+		&stats.KnowsArtistCount,
+		&stats.FollowsArtistCount,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("özet istatistikleri alınamadı: %w", err)
+	}
+
+	// 13 oylama yapan 1 kişi ise yaklaşık kişi sayısı
+	stats.TotalParticipants = stats.TotalRatings / 10
+
+	// 2. Puan dağılımı
+	const scoreQuery = `
 		SELECT score, COUNT(*) as count
 		FROM ratings
 		GROUP BY score
 		ORDER BY score ASC
 	`
-	rows, err := r.db.Query(ctx, query)
+	rows, err := r.db.Query(ctx, scoreQuery)
 	if err != nil {
-		return nil, fmt.Errorf("dağılım sorgusu başarısız: %w", err)
+		return nil, fmt.Errorf("puan dağılımı alınamadı: %w", err)
 	}
 	defer rows.Close()
 
-	var dist []domain.ScoreDistribution
 	for rows.Next() {
 		var s domain.ScoreDistribution
 		if err := rows.Scan(&s.Score, &s.Count); err != nil {
-			return nil, fmt.Errorf("dağılım satırı okunamadı: %w", err)
+			return nil, err
 		}
-		dist = append(dist, s)
+		stats.ScoreDistribution = append(stats.ScoreDistribution, s)
 	}
-	return dist, rows.Err()
+	rows.Close()
+
+	// 3. Cinsiyet dağılımı
+	const genderQuery = `
+		SELECT gender, COUNT(*) as count
+		FROM ratings
+		GROUP BY gender
+		ORDER BY count DESC
+	`
+	gRows, err := r.db.Query(ctx, genderQuery)
+	if err != nil {
+		return nil, fmt.Errorf("cinsiyet dağılımı alınamadı: %w", err)
+	}
+	defer gRows.Close()
+
+	for gRows.Next() {
+		var g domain.GenderDistribution
+		if err := gRows.Scan(&g.Gender, &g.Count); err != nil {
+			return nil, err
+		}
+		stats.GenderDistribution = append(stats.GenderDistribution, g)
+	}
+
+	return stats, nil
 }
