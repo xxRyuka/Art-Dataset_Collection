@@ -47,8 +47,8 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 
 	// 1. ADIM: Rating kaydını ekle
 	const insertRating = `
-		INSERT INTO ratings (image_id, score, age, gender, city, knows_artist)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO ratings (image_id, score, age, gender, city, knows_artist, follows_artist)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at
 	`
 	// RETURNING: INSERT edilen satırın belirtilen kolonlarını geri döner
@@ -60,6 +60,7 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 		rating.Gender,
 		rating.City,
 		rating.KnowsArtist,
+		rating.FollowsArtist,
 	)
 
 	// Dönen değerleri struct'a yaz
@@ -89,4 +90,76 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 	}
 
 	return nil
+}
+
+// GetAllExports, JOIN işlemi yaparak CSV'ye basılacak bilgileri getirir.
+func (r *ratingRepository) GetAllExports(ctx context.Context) ([]domain.RatingExport, error) {
+	const query = `
+		SELECT
+			i.file_name,
+			i.drive_file_id,
+			r.score,
+			r.age,
+			r.gender,
+			r.city,
+			r.knows_artist,
+			r.follows_artist,
+			r.created_at
+		FROM ratings r
+		JOIN images i ON i.id = r.image_id
+		ORDER BY r.created_at ASC
+	`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("export sorgusu başarısız: %w", err)
+	}
+	defer rows.Close()
+
+	var exports []domain.RatingExport
+	for rows.Next() {
+		var e domain.RatingExport
+		if err := rows.Scan(
+			&e.FileName,
+			&e.DriveFileID,
+			&e.Score,
+			&e.Age,
+			&e.Gender,
+			&e.City,
+			&e.KnowsArtist,
+			&e.FollowsArtist,
+			&e.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("export satırı okunamadı: %w", err)
+		}
+		exports = append(exports, e)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("export satırları okunurken hata: %w", err)
+	}
+	return exports, nil
+}
+
+// GetScoreDistribution, 1'den 10'a kadar oyların dağılımını hesaplar.
+func (r *ratingRepository) GetScoreDistribution(ctx context.Context) ([]domain.ScoreDistribution, error) {
+	const query = `
+		SELECT score, COUNT(*) as count
+		FROM ratings
+		GROUP BY score
+		ORDER BY score ASC
+	`
+	rows, err := r.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("dağılım sorgusu başarısız: %w", err)
+	}
+	defer rows.Close()
+
+	var dist []domain.ScoreDistribution
+	for rows.Next() {
+		var s domain.ScoreDistribution
+		if err := rows.Scan(&s.Score, &s.Count); err != nil {
+			return nil, fmt.Errorf("dağılım satırı okunamadı: %w", err)
+		}
+		dist = append(dist, s)
+	}
+	return dist, rows.Err()
 }

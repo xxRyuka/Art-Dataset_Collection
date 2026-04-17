@@ -47,6 +47,9 @@ type CreateRatingRequest struct {
 	// knows_artist: Sanatçıyı tanıyor mu?
 	// bool için binding:"required" gerekmiyor — false geçerli bir değer
 	KnowsArtist bool `json:"knows_artist"`
+
+	// follows_artist: Bu sanatçıyı daha önceden takip ediyor muydu?
+	FollowsArtist bool `json:"follows_artist"`
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -76,6 +79,16 @@ func NewRatingUseCase(ratingRepo domain.RatingRepository) *RatingUseCase {
 	return &RatingUseCase{ratingRepo: ratingRepo}
 }
 
+// GetScoreDistribution, puan dağılımını döndürür (grafik için).
+func (uc *RatingUseCase) GetScoreDistribution(ctx context.Context) ([]domain.ScoreDistribution, error) {
+	return uc.ratingRepo.GetScoreDistribution(ctx)
+}
+
+// GetAllExports, veriyi CSV olarak dışa aktarılacak formda döner.
+func (uc *RatingUseCase) GetAllExports(ctx context.Context) ([]domain.RatingExport, error) {
+	return uc.ratingRepo.GetAllExports(ctx)
+}
+
 // CreateRating, gelen isteği doğrular, kaydeder ve yanıt DTO'su döner.
 func (uc *RatingUseCase) CreateRating(ctx context.Context, req *CreateRatingRequest) (*CreateRatingResponse, error) {
 	// ── Ek Validasyon (Gin'in binding'i temel kontrolleri yapar) ──
@@ -89,12 +102,13 @@ func (uc *RatingUseCase) CreateRating(ctx context.Context, req *CreateRatingRequ
 	// Request DTO'sunu veritabanına yazılacak entity'ye çevir.
 	// Bu dönüşüm use case katmanında yapılır — ne handler ne repository yapar.
 	rating := &domain.Rating{
-		ImageID:     req.ImageID,
-		Score:       req.Score,
-		Age:         req.Age,
-		Gender:      strings.ToLower(req.Gender), // Tutarlılık için küçük harfe çevir
-		City:        strings.TrimSpace(req.City), // Baştaki/sondaki boşlukları temizle
-		KnowsArtist: req.KnowsArtist,
+		ImageID:       req.ImageID,
+		Score:         req.Score,
+		Age:           req.Age,
+		Gender:        strings.ToLower(req.Gender), // Tutarlılık için küçük harfe çevir
+		City:          strings.TrimSpace(req.City), // Baştaki/sondaki boşlukları temizle
+		KnowsArtist:   req.KnowsArtist,
+		FollowsArtist: req.FollowsArtist,
 	}
 
 	// ── Repository Çağrısı ──

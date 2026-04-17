@@ -75,11 +75,15 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 			gender        VARCHAR(30) NOT NULL,
 			city          VARCHAR(150) NOT NULL,
 			knows_artist  BOOLEAN NOT NULL DEFAULT FALSE,
+			follows_artist BOOLEAN NOT NULL DEFAULT FALSE,
 			created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 
 		-- image_id'ye göre sorgu hızını artırmak için index
 		CREATE INDEX IF NOT EXISTS idx_ratings_image_id ON ratings(image_id);`,
+
+		// 003: existing database update
+		`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS follows_artist BOOLEAN NOT NULL DEFAULT FALSE;`,
 	}
 
 	for i, sql := range migrations {

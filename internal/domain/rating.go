@@ -17,14 +17,15 @@ import (
 // demografik bilgilerini temsil eder.
 // Kullanıcı hesabı/login yoktur; her "oturum" kendi verisini taşır.
 type Rating struct {
-	ID          string    // PostgreSQL UUID — PRIMARY KEY
-	ImageID     string    // FK → images.id (hangi görsel puanlandı)
-	Score       int       // Puan: 1'den 10'a kadar
-	Age         int       // Kullanıcının yaşı
-	Gender      string    // "male" | "female" | "other" | "prefer_not_to_say"
-	City        string    // Kullanıcının şehri (Türkçe kabul edilir: İstanbul, Ankara...)
-	KnowsArtist bool      // Sanatçıyı tanıyor muydu? (önyargı ölçümü için kritik)
-	CreatedAt   time.Time // Kaydın oluşturulma zamanı
+	ID            string    `json:"id"`
+	ImageID       string    `json:"image_id"`
+	Score         int       `json:"score"`
+	Age           int       `json:"age"`
+	Gender        string    `json:"gender"`
+	City          string    `json:"city"`
+	KnowsArtist   bool      `json:"knows_artist"`
+	FollowsArtist bool      `json:"follows_artist"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Gender için geçerli değerler — use case katmanında validasyonda kullanılır
@@ -45,6 +46,29 @@ type RatingRepository interface {
 	// NOT: Bu metot aynı zamanda images.rating_count'u da 1 artırmalıdır.
 	// Bu iki işlem tek bir transaction içinde gerçekleştirilir.
 	Create(ctx context.Context, rating *Rating) error
+	GetAllExports(ctx context.Context) ([]RatingExport, error)
+	GetScoreDistribution(ctx context.Context) ([]ScoreDistribution, error)
+}
+
+// ─── ADMIN DASHBOARD DTOs ────────────────────────────────────────
+
+// RatingExport, CSV'ye dışa aktarılacak satırın formatı
+type RatingExport struct {
+	FileName      string
+	DriveFileID   string
+	Score         int
+	Age           int
+	Gender        string
+	City          string
+	KnowsArtist   bool
+	FollowsArtist bool
+	CreatedAt     time.Time
+}
+
+// ScoreDistribution, 1-10 puan dağılım grafiği için kullanılır
+type ScoreDistribution struct {
+	Score int `json:"score"`
+	Count int `json:"count"`
 }
 
 // ──────────────────────────────────────────────────────────────

@@ -69,6 +69,7 @@ func NewRouter(imageUC *usecase.ImageUseCase, ratingUC *usecase.RatingUseCase) *
 	// ── Handler'ları oluştur ──────────────────────────────────
 	imageHandler := NewImageHandler(imageUC)
 	ratingHandler := NewRatingHandler(ratingUC)
+	adminHandler := NewAdminHandler(ratingUC)
 
 	// ── API Route Grubu ───────────────────────────────────────
 	// r.Group("/api") → tüm route'lar /api prefix'i alır
@@ -84,6 +85,10 @@ func NewRouter(imageUC *usecase.ImageUseCase, ratingUC *usecase.RatingUseCase) *
 
 		// POST /api/ratings → Puan kaydet
 		api.POST("/ratings", ratingHandler.Create)
+
+		// ── Admin Endpoints ───────────────────────────────────────
+		api.GET("/admin/chart", adminHandler.GetChartData)
+		api.GET("/admin/export", adminHandler.ExportCSV)
 	}
 
 	return r

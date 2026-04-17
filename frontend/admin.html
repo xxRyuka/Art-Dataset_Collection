@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Sanat Algısı - Admin Paneli</title>
+    <meta name="description" content="Sanat araştırması oylama istatistikleri ve indirme paneli." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* ─── TOKENS ─────────────────────────────────────────── */
+        :root {
+            --bg: #07070f;
+            --surface: rgba(255, 255, 255, 0.05);
+            --surface-2: rgba(255, 255, 255, 0.09);
+            --border: rgba(255, 255, 255, 0.08);
+            --accent: #7c3aed;
+            --accent-glow: rgba(124, 58, 237, 0.4);
+            --accent-light: #a78bfa;
+            --text: #f1f5f9;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #f87171;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        /* ─── RESET ──────────────────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            /* overflow: hidden; */ /* Admin page should be scrollable if needed */
+        }
+
+        /* ─── ANIMATED BACKGROUND ────────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 20% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 50% at 80% 100%, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* ─── APP SHELL ──────────────────────────────────────── */
+        #app {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 16px;
+            gap: 24px;
+        }
+
+        /* ─── SCREENS / CONTAINERS ───────────────────────── */
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: fadeSlideIn 0.35s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─── CARD ───────────────────────────────────────────── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            backdrop-filter: blur(16px);
+        }
+
+        /* ─── TYPOGRAPHY ─────────────────────────────────────── */
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-top: 8px;
+        }
+
+        /* ─── BUTTON ─────────────────────────────────────────── */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px 24px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            box-shadow: 0 0 28px var(--accent-glow);
+            transition: opacity .15s, transform .15s, box-shadow .15s;
+        }
+
+        .btn:active {
+            opacity: .85;
+            transform: scale(.98);
+        }
+
+        /* ─── CHART WRAP ───────────────────────────────────── */
+        .chart-wrap {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        /* ─── HEADER ───────────────────────────────────────── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="app">
+
+        <div class="container">
+            <div class="header card">
+                <div>
+                    <h1 class="title">Admin Paneli</h1>
+                    <p class="subtitle">Genel Puanlama İstatistikleri</p>
+                </div>
+                <div>
+                    <button class="btn" onclick="exportCSV()">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Verileri İndir (CSV)
+                    </button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2 class="title" style="font-size: 18px; margin-bottom: 24px;">Puan Dağılımı (1 - 10)</h2>
+                <div class="chart-wrap">
+                    <canvas id="scoreChart"></canvas>
+                </div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <script>
+        // CANLI URL'İNİZİ BURAYA YAZIN:
+        const API_URL = 'https://art-datasetcollection-production.up.railway.app';
+        const API_KEY = 'ArtSurvey2024Gizli';
+
+        let chartInstance = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadChartData();
+        });
+
+        async function loadChartData() {
+            try {
+                const res = await fetch(`${API_URL}/api/admin/chart`, {
+                    headers: { 'X-API-Key': API_KEY },
+                });
+
+                if (!res.ok) throw new Error(`API Hatası: ${res.status}`);
+
+                const data = await res.json();
+                renderChart(data);
+
+            } catch (err) {
+                console.error("Grafik verileri yüklenemedi", err);
+                alert("Grafik verileri alınamadı. Railway bağlantınızı kontrol edin.");
+            }
+        }
+
+        function renderChart(data) {
+            // data array like [{score: 1, count: 5}, {score: 2, count: 12}]
+            // Biz hepsini 1'den 10'a kadar dolduralım, boş olanları 0 gösterelim
+            const labels = Array.from({length: 10}, (_, i) => i + 1);
+            const counts = new Array(10).fill(0);
+
+            if (data && Array.isArray(data)) {
+                data.forEach(item => {
+                    if (item.score >= 1 && item.score <= 10) {
+                        counts[item.score - 1] = item.count;
+                    }
+                });
+            }
+
+            const ctx = document.getElementById('scoreChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Kullanıcı Oyları',
+                        data: counts,
+                        backgroundColor: 'rgba(124, 58, 237, 0.6)',
+                        borderColor: 'rgba(167, 139, 250, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#f1f5f9'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function exportCSV() {
+            // Frontend'den doğrudan indirme tetiklemesi
+            try {
+                const response = await fetch(`${API_URL}/api/admin/export`, {
+                    headers: { 'X-API-Key': API_KEY },
+                });
+
+                if (!response.ok) throw new Error("İndirme başarısız.");
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                
+                // Content-Disposition headerından dosya adını al (eğer varsa)
+                let filename = "dataset_export.csv";
+                const disposition = response.headers.get('Content-Disposition');
+                if (disposition && disposition.indexOf('filename=') !== -1) {
+                    var filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
+                    var matches = filenameRegex.exec(disposition);
+                    if (matches != null && matches[1]) { 
+                        filename = matches[1].replace(/['"]/g, '');
+                    }
+                }
+
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error("CSV indirme hatası", err);
+                alert("Dosya indirilemedi!");
+            }
+        }
+    </script>
+</body>
+
+</html>
