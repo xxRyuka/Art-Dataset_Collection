@@ -73,7 +73,9 @@ func Load() (*Config, error) {
 // Örn: "host=localhost port=5432 user=postgres password=... dbname=art_dataset sslmode=disable"
 func (c *Config) DSN() string {
 	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		// sslmode=prefer: Railway PostgreSQL hem SSL hem plain bağlantıyı destekler
+		// sslmode=disable bazı cloud ortamlarında bağlantıyı reddeder
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=prefer",
 		c.DBHost, c.DBPort, c.DBUser, c.DBPassword, c.DBName,
 	)
 }
