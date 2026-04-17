@@ -41,11 +41,12 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DBHost:        getEnv("DB_HOST", "localhost"),
-		DBPort:        getEnv("DB_PORT", "5433"), // .env'deki kasıtlı farklı port
-		DBUser:        getEnv("DB_USER", "postgres"),
-		DBPassword:    getEnv("DB_PASSWORD", ""),
-		DBName:        getEnv("DB_NAME", "art_dataset"),
+		// Fallback zinciri: DB_HOST -> PGHOST (Railway) -> localhost
+		DBHost:        getEnv("DB_HOST", getEnv("PGHOST", "localhost")),
+		DBPort:        getEnv("DB_PORT", getEnv("PGPORT", "5433")), // local default'u 5433 bıraktık
+		DBUser:        getEnv("DB_USER", getEnv("PGUSER", "postgres")),
+		DBPassword:    getEnv("DB_PASSWORD", getEnv("PGPASSWORD", "")),
+		DBName:        getEnv("DB_NAME", getEnv("PGDATABASE", "art_dataset")),
 		DriveFolderID: getEnv("GOOGLE_DRIVE_FOLDER_ID", ""),
 		GoogleAPIKey:  getEnv("GOOGLE_API_KEY", ""),
 		APIKey:        getEnv("API_KEY", ""),
