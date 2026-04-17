@@ -36,6 +36,9 @@ WORKDIR /app
 # Sadece derlenmiş binary'yi kopyala (kaynak kod imajda yok)
 COPY --from=builder /art-api .
 
+# Frontend dosyalarını kopyala
+COPY frontend ./frontend
+
 # Uygulamanın çalıştığı port (docker-compose.yml ile eşleşmeli)
 EXPOSE 8080
 

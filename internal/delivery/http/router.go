@@ -55,16 +55,17 @@ func NewRouter(imageUC *usecase.ImageUseCase, ratingUC *usecase.RatingUseCase) *
 	// ── Health Check (Auth gerektirmez) ──────────────────────
 	// Yük dengeleyici (load balancer) veya Docker health check için
 	r.GET("/health", func(c *gin.Context) {
-		// c.JSON(statusCode, herhangi bir struct/map)
-		// net/http karşılığı:
-		//   w.Header().Set("Content-Type", "application/json")
-		//   w.WriteHeader(http.StatusOK)
-		//   json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"service": "art-dataset-collector",
 		})
 	})
+
+	// ── Frontend (Static Files) ───────────────────────────────
+	// /       -> frontend/index.html
+	// /admin  -> frontend/admin.html
+	r.StaticFile("/", "./frontend/index.html")
+	r.StaticFile("/admin", "./frontend/admin.html")
 
 	// ── Handler'ları oluştur ──────────────────────────────────
 	imageHandler := NewImageHandler(imageUC)
