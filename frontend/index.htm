@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sanat Algısı Araştırması</title>
+  <meta name="description" content="Sanat eserlerini oylayarak araştırmaya katkı sağla." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── TOKENS ─────────────────────────────────────────── */
+    :root {
+      --bg:           #07070f;
+      --surface:      rgba(255,255,255,0.05);
+      --surface-2:    rgba(255,255,255,0.09);
+      --border:       rgba(255,255,255,0.08);
+      --accent:       #7c3aed;
+      --accent-glow:  rgba(124,58,237,0.4);
+      --accent-light: #a78bfa;
+      --text:         #f1f5f9;
+      --text-muted:   #94a3b8;
+      --success:      #10b981;
+      --error:        #f87171;
+      --radius:       16px;
+      --radius-sm:    10px;
+    }
+
+    /* ─── RESET ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden; /* Sadece aktif ekran görünür */
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ─── ANIMATED BACKGROUND ────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%,  rgba(124,58,237,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(99,102,241,0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    /* ─── APP SHELL ──────────────────────────────────────── */
+    #app {
+      position: relative; z-index: 1;
+      width: 100%; height: 100dvh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 16px;
+    }
+
+    /* ─── SCREENS ────────────────────────────────────────── */
+    .screen {
+      display: none;
+      width: 100%; max-width: 430px;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeSlideIn 0.35s cubic-bezier(.4, 0, .2, 1);
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── CARD ───────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(16px);
+    }
+
+    /* ─── TYPOGRAPHY ─────────────────────────────────────── */
+    .title   { font-size: 24px; font-weight: 700; line-height: 1.2; }
+    .subtitle{ font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-top: 8px; }
+    .label   { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+
+    /* ─── BUTTON ─────────────────────────────────────────── */
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 16px;
+      background: var(--accent);
+      color: #fff; font-size: 16px; font-weight: 600;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: 0 0 28px var(--accent-glow);
+      transition: opacity .15s, transform .15s, box-shadow .15s;
+    }
+    .btn:active { opacity: .85; transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    .btn.secondary {
+      background: var(--surface-2); color: var(--text);
+      box-shadow: none; border: 1px solid var(--border);
+    }
+
+    /* ─── INPUT ──────────────────────────────────────────── */
+    .input {
+      width: 100%; padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-size: 16px; font-family: inherit;
+      outline: none; transition: border-color .2s;
+    }
+    .input:focus { border-color: var(--accent-light); }
+    .input::placeholder { color: var(--text-muted); }
+
+    /* ─── GENDER PILLS ───────────────────────────────────── */
+    .pill-group { display: flex; gap: 8px; }
+    .pill {
+      flex: 1; padding: 12px 8px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-muted);
+      font-size: 14px; font-weight: 500; text-align: center;
+      cursor: pointer; transition: all .2s; user-select: none;
+    }
+    .pill.selected {
+      background: rgba(124,58,237,0.2);
+      border-color: var(--accent-light);
+      color: var(--accent-light);
+    }
+
+    /* ─── PROGRESS ───────────────────────────────────────── */
+    .progress-wrap { display: flex; align-items: center; gap: 12px; }
+    .progress-text { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .progress-bar {
+      flex: 1; height: 4px;
+      background: var(--surface-2); border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-light));
+      transition: width .4s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ─── IMAGE CARD ─────────────────────────────────────── */
+    .img-wrap {
+      width: 100%; border-radius: var(--radius);
+      overflow: hidden; background: var(--surface-2);
+      aspect-ratio: 4/3;
+      position: relative;
+    }
+    .img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: opacity .4s;
+    }
+    .img-spinner {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent-light);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── KNOWS ARTIST TOGGLE ────────────────────────────── */
+    .toggle-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px;
+    }
+    .toggle-label { font-size: 14px; color: var(--text-muted); }
+    .toggle-track {
+      width: 52px; height: 28px; flex-shrink: 0;
+      border-radius: 99px; cursor: pointer;
+      background: var(--surface-2); border: 1.5px solid var(--border);
+      position: relative; transition: background .2s, border-color .2s;
+    }
+    .toggle-track.on {
+      background: rgba(124,58,237,0.35);
+      border-color: var(--accent-light);
+    }
+    .toggle-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--text-muted);
+      transition: transform .2s, background .2s;
+    }
+    .toggle-track.on .toggle-thumb {
+      transform: translateX(24px);
+      background: var(--accent-light);
+    }
+
+    /* ─── SCORE BUTTONS ──────────────────────────────────── */
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+    .score-btn {
+      aspect-ratio: 1;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-muted);
+      font-size: 18px; font-weight: 600;
+      cursor: pointer; transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .score-btn:active { transform: scale(.9); }
+    .score-btn.selected {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+
+    /* ─── EMOJI BIG ──────────────────────────────────────── */
+    .emoji-big { font-size: 52px; text-align: center; }
+
+    /* ─── TOAST ──────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--surface); border: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      padding: 12px 20px; border-radius: 99px;
+      font-size: 14px; white-space: nowrap;
+      transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s;
+      opacity: 0; z-index: 999;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.error { color: var(--error); border-color: var(--error); }
+
+    /* ─── DONE STATS ─────────────────────────────────────── */
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-val { font-weight: 700; color: var(--accent-light); }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── EKRAN 1: KARŞILAMA ─────────────────────────────── -->
+  <section class="screen active" id="screen-welcome">
+    <div style="text-align:center; padding:8px 0 4px;">
+      <div class="emoji-big">🎨</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <h1 class="title">Sanat Algısı Araştırması</h1>
+      <p class="subtitle">
+        Sana gösterilen <strong>10 sanat eserini</strong> 1–10 arası puanla.<br>
+        Kişisel sanat algısını ölçen bir veri seti oluşturuyoruz.
+      </p>
+    </div>
+    <button class="btn" onclick="goTo('screen-info')">
+      Başla <span style="font-size:18px">→</span>
+    </button>
+    <p style="font-size:12px; color:var(--text-muted); text-align:center; padding-bottom:4px;">
+      Kişisel veri paylaşılmaz. İsim sorulmaz.
+    </p>
+  </section>
+
+  <!-- ─── EKRAN 2: BİLGİ FORMU ─────────────────────────────── -->
+  <section class="screen" id="screen-info">
+    <div class="card">
+      <h2 class="title" style="font-size:20px;">Hakkında</h2>
+      <p class="subtitle">Sadece bir kez. Tekrar sorulmaz.</p>
+    </div>
+
+    <!-- Yaş -->
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Yaşın</div>
+      <input class="input" id="inp-age" type="number" min="5" max="110"
+             placeholder="Örn: 24" inputmode="numeric" />
+    </div>
+
+    <!-- Cinsiyet -->
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Cinsiyet</div>
+      <div class="pill-group">
+        <div class="pill" data-val="male"              onclick="selectGender(this)">Erkek</div>
+        <div class="pill" data-val="female"            onclick="selectGender(this)">Kadın</div>
+        <div class="pill" data-val="other"             onclick="selectGender(this)">Diğer</div>
+        <div class="pill" data-val="prefer_not_to_say" onclick="selectGender(this)" style="font-size:12px;">Belirtmem</div>
+      </div>
+    </div>
+
+    <!-- Şehir -->
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Şehrin</div>
+      <input class="input" id="inp-city" type="text"
+             placeholder="Örn: İstanbul" autocomplete="off" />
+    </div>
+
+    <button class="btn" onclick="startRating()">
+      Oylama Başlasın 
+    </button>
+
+    <button class="btn secondary" onclick="goTo('screen-welcome')" style="margin-top:-4px;">
+      ← Geri
+    </button>
+  </section>
+
+  <!-- ─── EKRAN 3: OYLAMA ───────────────────────────────────── -->
+  <section class="screen" id="screen-rating">
+
+    <!-- Progress -->
+    <div class="progress-wrap">
+      <span class="progress-text" id="progress-text">1 / 10</span>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+      </div>
+    </div>
+
+    <!-- Görsel -->
+    <div class="img-wrap" id="img-wrap">
+      <div class="img-spinner" id="img-spinner">
+        <div class="spinner"></div>
+      </div>
+      <img id="art-img" src="" alt="Sanat eseri" style="opacity:0;"
+           onload="imageLoaded()" onerror="imageError()" />
+    </div>
+
+    <!-- Alt kontroller -->
+    <div class="card" style="gap:14px; display:flex; flex-direction:column;">
+
+      <!-- Sanatçı toggle -->
+      <div class="toggle-wrap">
+        <span class="toggle-label">Bu eser/sanatçıyı tanıyor musun?</span>
+        <div class="toggle-track" id="knows-toggle" onclick="toggleKnows()">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+
+      <!-- Puan seç -->
+      <div>
+        <div class="label">Puanın</div>
+        <div class="score-grid" id="score-grid">
+          <!-- 1-10 butonları JS ile oluşturulur -->
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ─── EKRAN 4: TAMAMLANDI ───────────────────────────────── -->
+  <section class="screen" id="screen-done">
+    <div style="text-align:center; padding:8px 0;">
+    </div>
+    <div class="card">
+      <h2 class="title" style="text-align:center;">Teşekkürler!</h2>
+      <p class="subtitle" style="text-align:center;">
+        10 eser oylandı. Katkın veri setine eklendi.
+      </p>
+    </div>
+    <div class="card" id="session-stats">
+      <!-- stat satırları JS ile doldurulur -->
+    </div>
+    <button class="btn" onclick="restartSession()">
+      Tekrar Oyla
+    </button>
+    <button class="btn secondary" onclick="goTo('screen-welcome')">
+      Ana Sayfa
+    </button>
+  </section>
+
+</div>
+
+<!-- Toast bildirimi -->
+<div id="toast"></div>
+
+<script>
+  /* ═══════════════════════════════════════════════════════════
+     AYARLAR — Canlıya alırken API_URL'i gerçek sunucu URL'iyle değiştir
+     ═══════════════════════════════════════════════════════════ */
+  const CONFIG = {
+    // Geliştirme: http://localhost:8080
+    // Canlı (Railway vb.): https://art-api.railway.app
+    API_URL : 'art-datasetcollection-production.up.railway.app',
+
+    // .env dosyasındaki API_KEY değeriyle aynı olmalı
+    API_KEY : 'ArtSurvey2024Gizli',
+
+    // Bir oturumda kaç eser oylanacak
+    TOTAL   : 10,
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     UYGULAMA DURUMU
+     ═══════════════════════════════════════════════════════════ */
+  const state = {
+    gender      : null,   // Bilgi formundan seçilen cinsiyet
+    imageId     : null,   // Şu an gösterilen görselin UUID'si
+    knowsArtist : false,  // Sanatçı tanınıyor mu?
+    selectedScore: null,  // Seçilen puan (1-10)
+    completed   : 0,      // Bu oturumda tamamlanan rating sayısı
+    scores      : [],     // Oturum puanları (istatistik için)
+    isSubmitting: false,  // Çift gönderimi önlemek için kilit
+  };
+
+  /* ═══════════════════════════════════════════════════════════
+     EKRAN GEÇİŞİ
+     ═══════════════════════════════════════════════════════════ */
+  function goTo(screenId) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     TOAST BİLDİRİMİ
+     ═══════════════════════════════════════════════════════════ */
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ''; }, 2200);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     BİLGİ FORMU
+     ═══════════════════════════════════════════════════════════ */
+  function selectGender(el) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    state.gender = el.dataset.val;
+  }
+
+  function startRating() {
+    const age  = parseInt(document.getElementById('inp-age').value);
+    const city = document.getElementById('inp-city').value.trim();
+
+    if (!age || age < 5 || age > 110) {
+      showToast('Geçerli bir yaş gir (5-110)', true); return;
+    }
+    if (!state.gender) {
+      showToast('Cinsiyetini seç', true); return;
+    }
+    if (city.length < 2) {
+      showToast('Şehir adı en az 2 karakter olmalı', true); return;
+    }
+
+    // Kullanıcı bilgilerini kaydet
+    state.age  = age;
+    state.city = city;
+
+    // Puanlama başlat
+    state.completed = 0;
+    state.scores    = [];
+    buildScoreGrid();
+    goTo('screen-rating');
+    loadNextImage();
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PUAN BUTONLARI OLUŞTUR
+     ═══════════════════════════════════════════════════════════ */
+  function buildScoreGrid() {
+    const grid = document.getElementById('score-grid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= 10; i++) {
+      const btn = document.createElement('button');
+      btn.className   = 'score-btn';
+      btn.textContent = i;
+      btn.onclick     = () => selectScore(i, btn);
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectScore(score, el) {
+    if (state.isSubmitting) return;
+
+    // Önceki seçimi temizle
+    document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    state.selectedScore = score;
+
+    // Kısa gecikme sonra otomatik gönder (UX: kullanıcı seçimi görür)
+    setTimeout(submitRating, 350);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     SANATÇI TOGGLE
+     ═══════════════════════════════════════════════════════════ */
+  function toggleKnows() {
+    state.knowsArtist = !state.knowsArtist;
+    document.getElementById('knows-toggle').classList.toggle('on', state.knowsArtist);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     GÖRSELİ YÜKLE  (GET /api/images/next)
+     ═══════════════════════════════════════════════════════════ */
+  async function loadNextImage() {
+    // UI sıfırla
+    state.selectedScore = null;
+    state.knowsArtist   = false;
+    state.isSubmitting  = false;
+    document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('knows-toggle').classList.remove('on');
+
+    const img     = document.getElementById('art-img');
+    const spinner = document.getElementById('img-spinner');
+    img.style.opacity = '0';
+    spinner.style.display = 'flex';
+
+    try {
+      const res = await fetch(`${CONFIG.API_URL}/api/images/next`, {
+        headers: { 'X-API-Key': CONFIG.API_KEY },
+      });
+
+      if (!res.ok) throw new Error(`API ${res.status}`);
+
+      const data = await res.json();
+      state.imageId = data.image_id;
+      img.src       = data.thumbnail_url;
+
+      // Progress güncelle
+      updateProgress();
+
+    } catch (err) {
+      spinner.style.display = 'none';
+      showToast('Görsel yüklenemedi, tekrar deniyor…', true);
+      console.error(err);
+      setTimeout(loadNextImage, 3000);
+    }
+  }
+
+  function imageLoaded() {
+    document.getElementById('img-spinner').style.display = 'none';
+    document.getElementById('art-img').style.opacity     = '1';
+  }
+
+  function imageError() {
+    document.getElementById('img-spinner').style.display = 'none';
+    showToast('Görsel açılamadı, sonrakine geçiliyor…', true);
+    setTimeout(loadNextImage, 1500);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PUANI GÖNDER  (POST /api/ratings)
+     ═══════════════════════════════════════════════════════════ */
+  async function submitRating() {
+    if (!state.selectedScore || state.isSubmitting) return;
+    state.isSubmitting = true;
+
+    const body = {
+      image_id    : state.imageId,
+      score       : state.selectedScore,
+      age         : state.age,
+      gender      : state.gender,
+      city        : state.city,
+      knows_artist: state.knowsArtist,
+    };
+
+    try {
+      const res = await fetch(`${CONFIG.API_URL}/api/ratings`, {
+        method : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key'   : CONFIG.API_KEY,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) throw new Error(`API ${res.status}`);
+
+      // Kayıt başarılı
+      state.scores.push(state.selectedScore);
+      state.completed++;
+
+      if (state.completed >= CONFIG.TOTAL) {
+        // 10 tamamlandı → bitiş ekranı
+        showDone();
+      } else {
+        showToast('✓ Kaydedildi');
+        loadNextImage();
+      }
+
+    } catch (err) {
+      state.isSubmitting = false;
+      showToast('Gönderim başarısız, tekrar dene', true);
+      console.error(err);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PROGRESS BAR
+     ═══════════════════════════════════════════════════════════ */
+  function updateProgress() {
+    const done  = state.completed;
+    const total = CONFIG.TOTAL;
+    document.getElementById('progress-text').textContent = `${done + 1} / ${total}`;
+    document.getElementById('progress-fill').style.width =
+      `${((done) / total) * 100 + 10}%`;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     BİTİŞ EKRANI
+     ═══════════════════════════════════════════════════════════ */
+  function showDone() {
+    const avg = (state.scores.reduce((a, b) => a + b, 0) / state.scores.length).toFixed(1);
+    const max = Math.max(...state.scores);
+    const min = Math.min(...state.scores);
+
+    document.getElementById('session-stats').innerHTML = `
+      <div class="stat-row">
+        <span>Oylanan eser</span>
+        <span class="stat-val">${CONFIG.TOTAL} adet</span>
+      </div>
+      <div class="stat-row">
+        <span>Ortalama puanın</span>
+        <span class="stat-val">${avg} / 10</span>
+      </div>
+      <div class="stat-row">
+        <span>En yüksek</span>
+        <span class="stat-val">${max}</span>
+      </div>
+      <div class="stat-row">
+        <span>En düşük</span>
+        <span class="stat-val">${min}</span>
+      </div>
+    `;
+
+    goTo('screen-done');
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     TEKRAR OYLA: Bilgileri tekrar sormadan yeni oturum başlat
+     ═══════════════════════════════════════════════════════════ */
+  function restartSession() {
+    state.completed = 0;
+    state.scores    = [];
+    buildScoreGrid();
+    goTo('screen-rating');
+    loadNextImage();
+  }
+</script>
+</body>
+</html>
