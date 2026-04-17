@@ -15,6 +15,7 @@ import (
 // Struct field'ları export edilmiş (büyük harf) — diğer paketlerden erişilebilir.
 type Config struct {
 	// Veritabanı
+	DatabaseURL string // URL formatında bağlantı cümlesi (Railway vb. için öncelikli)
 	DBHost     string
 	DBPort     string
 	DBUser     string
@@ -41,6 +42,7 @@ func Load() (*Config, error) {
 	_ = godotenv.Load()
 
 	cfg := &Config{
+		DatabaseURL:   getEnv("DATABASE_URL", ""),
 		// Fallback zinciri: DB_HOST -> PGHOST (Railway) -> localhost
 		DBHost:        getEnv("DB_HOST", getEnv("PGHOST", "localhost")),
 		DBPort:        getEnv("DB_PORT", getEnv("PGPORT", "5433")), // local default'u 5433 bıraktık
@@ -58,8 +60,8 @@ func Load() (*Config, error) {
 	if cfg.APIKey == "" {
 		return nil, fmt.Errorf("API_KEY ortam değişkeni boş olamaz")
 	}
-	if cfg.DBPassword == "" {
-		return nil, fmt.Errorf("DB_PASSWORD ortam değişkeni boş olamaz")
+	if cfg.DatabaseURL == "" && cfg.DBPassword == "" {
+		return nil, fmt.Errorf("DB_PASSWORD veya DATABASE_URL ortam değişkeni tanımlı olmalıdır")
 	}
 	// GOOGLE_API_KEY olmadan sync scripti çalışmaz; API sunucusu çalışmaya devam eder
 	if cfg.GoogleAPIKey == "" {
@@ -73,6 +75,11 @@ func Load() (*Config, error) {
 // DSN, pgx/pgxpool için bağlantı dizesini oluşturur.
 // Örn: "host=localhost port=5432 user=postgres password=... dbname=art_dataset sslmode=disable"
 func (c *Config) DSN() string {
+	// Eğer ortamda DATABASE_URL hazır verilmişse onu kullan (örn: Railway)
+	if c.DatabaseURL != "" {
+		return c.DatabaseURL
+	}
+
 	return fmt.Sprintf(
 		// sslmode=prefer: Railway PostgreSQL hem SSL hem plain bağlantıyı destekler
 		// sslmode=disable bazı cloud ortamlarında bağlantıyı reddeder
