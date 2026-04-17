@@ -1,0 +1,67 @@
+# docker-compose.yml — Art Dataset Collector
+#
+# Çalıştırma:
+#   docker compose up -d          → Arka planda başlat
+#   docker compose logs -f        → Logları takip et
+#   docker compose down           → Durdur (veriler korunur)
+#   docker compose down -v        → Durdur + verileri sil
+#
+# .env dosyasındaki değerler otomatik okunur.
+# Özellikle: DB_PORT=5433 (kasıtlı olarak 5432'den farklı)
+
+services:
+
+  # ── PostgreSQL Veritabanı ────────────────────────────────────
+  db:
+    image: postgres:15.15           # Hafif Alpine tabanlı resmi imaj
+    container_name: art_dataset_db
+    restart: unless-stopped             # Crash'te yeniden başla; manuel durdurulfunca başlama
+    environment:
+      POSTGRES_USER: ${DB_USER}         # .env'den: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD} # .env'den: root
+      POSTGRES_DB: ${DB_NAME}           # .env'den: art_dataset
+    ports:
+      # HOST:CONTAINER
+      # Sol taraf: Dışarıdan erişilen port (.env'deki DB_PORT = 5433)
+      # Sağ taraf: Container içindeki PostgreSQL portu (her zaman 5432)
+      # Örn: localhost:5433 → container:5432
+      - "${DB_PORT}:5432"
+    volumes:
+      # Named volume: veriler container silinse bile korunur
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      # db servisi hazır olmadan api servisi başlamasın
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s    # Her 5 saniyede kontrol
+      timeout: 5s     # 5 saniye içinde yanıt vermesse başarısız say
+      retries: 5      # 5 başarısız denemeden sonra "unhealthy" işaretle
+      start_period: 10s
+
+  # ── Go API Sunucusu ─────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: art_dataset_api
+    restart: unless-stopped
+    env_file:
+      - .env                            # Tüm .env değerlerini container'a aktar
+    environment:
+      # Docker Compose içinde db, container adıyla erişilir; "localhost" değil
+      # Api container'ından PostgreSQL'e ulaşmak için: host=db port=5432
+      # NOT: Container içinde port her zaman 5432'dir; 5433 sadece dışarıya açık
+      DB_HOST: db       # "localhost" değil — Docker ağındaki servis adı
+      DB_PORT: 5432     # Container içi port (dışarıya 5433 olarak açık olsa da)
+    ports:
+      - "${PORT}:${PORT}"               # 8080:8080
+    depends_on:
+      db:
+        condition: service_healthy      # DB hazır olmadan API başlamasın
+    # Geliştirme sırasında kaynak kodu mount edebilirsin (hot-reload için Air kullanılır)
+    # volumes:
+    #   - .:/app
+
+# ── Kalıcı Depolama ─────────────────────────────────────────
+volumes:
+  postgres_data:
+    # driver: local (varsayılan) — veritabanı dosyaları Docker'ın kendi alanında tutulur

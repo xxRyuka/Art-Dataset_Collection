@@ -1,0 +1,6 @@
+# .gitignore — Git'e gönderilmeyecek dosyalar
+.env                    # Gerçek ortam değişkenleri (şifreler burada)
+credentials.json        # Google Service Account anahtarı
+*.exe                   # Derlenmiş binary dosyalar
+/bin/                   # Build çıktıları
+*.csv                   # Export edilen veri setleri (büyük olabilir)

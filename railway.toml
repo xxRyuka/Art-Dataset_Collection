@@ -1,0 +1,17 @@
+# railway.toml — Railway deployment konfigürasyonu
+#
+# Railway kendi Railpack build sistemini kullanmaya çalışır.
+# Biz zaten hazır bir Dockerfile yazdığımız için onu kullanmasını söylüyoruz.
+# Bu sayede Railpack'in "no Go files in /app" hatası ortadan kalkar.
+
+[build]
+# Railpack yerine bizim Dockerfile'ı kullan
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Sağlık kontrolü — Railway container'ın hazır olduğunu bu endpoint ile anlar
+healthcheckPath = "/health"
+healthcheckTimeout = 30     # 30 saniye içinde /health 200 vermezse restart
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
