@@ -29,9 +29,10 @@ func NewRatingRepository(db *pgxpool.Pool) domain.RatingRepository {
 // ilgili görselin rating_count'unu 1 artırır.
 //
 // İki ayrı sorgu yerine transaction kullanmamızın sebebi:
-//   Senaryo: Rating INSERT başarılı, ama sonraki UPDATE başarısız.
-//   Sonuç olmadan: Rating kaydı var ama sayaç güncellenmedi → veri tutarsızlığı.
-//   Transaction ile: Her ikisi de başarılı olur veya her ikisi de geri alınır.
+//
+//	Senaryo: Rating INSERT başarılı, ama sonraki UPDATE başarısız.
+//	Sonuç olmadan: Rating kaydı var ama sayaç güncellenmedi → veri tutarsızlığı.
+//	Transaction ile: Her ikisi de başarılı olur veya her ikisi de geri alınır.
 func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) error {
 	// Transaction başlat
 	// net/http projelerinde de aynı: db.BeginTx(ctx, nil)

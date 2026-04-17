@@ -25,9 +25,10 @@ import (
 // NewRouter, Gin engine'ini oluşturur ve tüm route'ları kaydeder.
 //
 // net/http karşılığı:
-//   mux := http.NewServeMux()
-//   mux.Handle("/api/images/next", middleware(imageHandler))
-//   mux.Handle("/api/ratings", middleware(ratingHandler))
+//
+//	mux := http.NewServeMux()
+//	mux.Handle("/api/images/next", middleware(imageHandler))
+//	mux.Handle("/api/ratings", middleware(ratingHandler))
 //
 // Gin bunu çok daha temiz yapıyor: route gruplama, otomatik middleware chain.
 func NewRouter(imageUC *usecase.ImageUseCase, ratingUC *usecase.RatingUseCase) *gin.Engine {

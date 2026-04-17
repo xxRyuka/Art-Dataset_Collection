@@ -57,8 +57,8 @@ type ImageRepository interface {
 
 // ImageStats, /api/stats endpoint'i için özet bilgi taşır.
 type ImageStats struct {
-	TotalImages    int // Toplam görsel sayısı
-	RatedImages    int // En az 1 kez puanlanmış görsel sayısı
-	UnratedImages  int // Hiç puanlanmamış görsel sayısı
-	TotalRatings   int // Toplam puan sayısı
+	TotalImages   int // Toplam görsel sayısı
+	RatedImages   int // En az 1 kez puanlanmış görsel sayısı
+	UnratedImages int // Hiç puanlanmamış görsel sayısı
+	TotalRatings  int // Toplam puan sayısı
 }

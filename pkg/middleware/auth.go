@@ -19,17 +19,17 @@ import (
 //
 // Gin middleware ile net/http middleware karşılaştırması:
 //
-//   GIN:
-//     func APIKeyAuth() gin.HandlerFunc {
-//         return func(c *gin.Context) { ... c.Next() }
-//     }
+//	GIN:
+//	  func APIKeyAuth() gin.HandlerFunc {
+//	      return func(c *gin.Context) { ... c.Next() }
+//	  }
 //
-//   net/http:
-//     func APIKeyAuth(next http.Handler) http.Handler {
-//         return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//             ... next.ServeHTTP(w, r)
-//         })
-//     }
+//	net/http:
+//	  func APIKeyAuth(next http.Handler) http.Handler {
+//	      return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//	          ... next.ServeHTTP(w, r)
+//	      })
+//	  }
 //
 // İkisi de aynı mantıkla çalışır; Gin sadece c.Context ile w ve r'yi birleştirir.
 func APIKeyAuth() gin.HandlerFunc {

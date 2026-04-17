@@ -23,8 +23,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ryuka/art-dataset-collector/internal/repository"
 	deliveryHTTP "github.com/ryuka/art-dataset-collector/internal/delivery/http"
+	"github.com/ryuka/art-dataset-collector/internal/repository"
 	"github.com/ryuka/art-dataset-collector/internal/usecase"
 	"github.com/ryuka/art-dataset-collector/pkg/config"
 	"github.com/ryuka/art-dataset-collector/pkg/database"
@@ -92,7 +92,7 @@ func main() {
 	// net/http.Server → tam kontrol
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),
-		Handler:      router, // Gin engine, http.Handler interface'ini implemente eder
+		Handler:      router,           // Gin engine, http.Handler interface'ini implemente eder
 		ReadTimeout:  15 * time.Second, // İstek okuma zaman aşımı
 		WriteTimeout: 15 * time.Second, // Yanıt yazma zaman aşımı
 		IdleTimeout:  60 * time.Second, // Keep-alive bağlantılar için

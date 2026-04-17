@@ -106,14 +106,14 @@ func main() {
 
 	for rows.Next() {
 		var (
-			fileName     string
-			driveFileID  string
-			score        int
-			age          int
-			gender       string
-			city         string
-			knowsArtist  bool
-			createdAt    time.Time
+			fileName    string
+			driveFileID string
+			score       int
+			age         int
+			gender      string
+			city        string
+			knowsArtist bool
+			createdAt   time.Time
 		)
 
 		// rows.Scan: Her veritabanı sütununu karşılık gelen değişkene ata

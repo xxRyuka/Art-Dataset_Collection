@@ -14,7 +14,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/jackc/pgx/v5/pgxpool"               // PostgreSQL connection pool
+	"github.com/jackc/pgx/v5/pgxpool"                        // PostgreSQL connection pool
 	"github.com/ryuka/art-dataset-collector/internal/domain" // Domain entity'leri ve interface'ler
 )
 
@@ -28,7 +28,8 @@ type imageRepository struct {
 // domain.ImageRepository interface'ini döner — somut tipi gizler (Dependency Inversion).
 //
 // Kullanım (main.go'da):
-//   var imageRepo domain.ImageRepository = repository.NewImageRepository(pool)
+//
+//	var imageRepo domain.ImageRepository = repository.NewImageRepository(pool)
 func NewImageRepository(db *pgxpool.Pool) domain.ImageRepository {
 	return &imageRepository{db: db}
 }
@@ -116,8 +117,8 @@ func (r *imageRepository) BulkUpsert(ctx context.Context, images []domain.Image)
 	_, err := r.db.CopyFrom(
 		ctx,
 		// Hedef tablo ve kolonlar
-		[]string{"images"},                              // tablo adı (pgx bunu farklı alır)
-		[]string{"drive_file_id", "file_name"},          // yazılacak kolonlar
+		[]string{"images"},                     // tablo adı (pgx bunu farklı alır)
+		[]string{"drive_file_id", "file_name"}, // yazılacak kolonlar
 		// Veri kaynağı: pgx.CopyFromRows yerine CopyFromSlice kullanıyoruz
 		newImageCopySource(images),
 	)
