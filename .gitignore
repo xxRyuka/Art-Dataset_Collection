@@ -4,3 +4,4 @@ credentials.json        # Google Service Account anahtarı
 *.exe                   # Derlenmiş binary dosyalar
 /bin/                   # Build çıktıları
 *.csv                   # Export edilen veri setleri (büyük olabilir)
+DEPLOYMENT_GUIDE.md     # Deployment rehberi
