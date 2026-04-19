@@ -25,6 +25,9 @@ import (
 
 // CreateRatingRequest, kullanıcının gönderdiği puan formunu temsil eder.
 type CreateRatingRequest struct {
+	// session_id: Kullanıcının 10 oylamalık oturumunun UUID'si (frontend'de üretilir)
+	SessionID string `json:"session_id" binding:"required"`
+
 	// image_id: GET /api/images/next'den dönen UUID
 	// binding:"required" → Gin: bu alan boş olamaz
 	// net/http'de bunu manuel kontrol ederdin: if req.ImageID == "" { ... }
@@ -102,6 +105,7 @@ func (uc *RatingUseCase) CreateRating(ctx context.Context, req *CreateRatingRequ
 	// Request DTO'sunu veritabanına yazılacak entity'ye çevir.
 	// Bu dönüşüm use case katmanında yapılır — ne handler ne repository yapar.
 	rating := &domain.Rating{
+		SessionID:     req.SessionID,
 		ImageID:       req.ImageID,
 		Score:         req.Score,
 		Age:           req.Age,
@@ -144,6 +148,11 @@ func (uc *RatingUseCase) validateRequest(req *CreateRatingRequest) error {
 	// ImageID UUID formatında mı? (temel kontrol)
 	if len(req.ImageID) != 36 {
 		return fmt.Errorf("%w: image_id geçerli bir UUID olmalı", domain.ErrInvalidInput)
+	}
+
+	// SessionID UUID formatında mı?
+	if len(req.SessionID) != 36 {
+		return fmt.Errorf("%w: session_id geçerli bir UUID olmalı", domain.ErrInvalidInput)
 	}
 
 	return nil

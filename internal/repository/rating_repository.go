@@ -47,13 +47,14 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 
 	// 1. ADIM: Rating kaydını ekle
 	const insertRating = `
-		INSERT INTO ratings (image_id, score, age, gender, city, knows_artist, follows_artist)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO ratings (session_id, image_id, score, age, gender, city, knows_artist, follows_artist)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id, created_at
 	`
 	// RETURNING: INSERT edilen satırın belirtilen kolonlarını geri döner
 	// Bu sayede ayrı bir SELECT yapmadan id ve created_at'ı alırız
 	row := tx.QueryRow(ctx, insertRating,
+		rating.SessionID,
 		rating.ImageID,
 		rating.Score,
 		rating.Age,
@@ -96,6 +97,7 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 func (r *ratingRepository) GetAllExports(ctx context.Context) ([]domain.RatingExport, error) {
 	const query = `
 		SELECT
+			r.session_id,
 			i.file_name,
 			i.drive_file_id,
 			r.score,
@@ -119,6 +121,7 @@ func (r *ratingRepository) GetAllExports(ctx context.Context) ([]domain.RatingEx
 	for rows.Next() {
 		var e domain.RatingExport
 		if err := rows.Scan(
+			&e.SessionID,
 			&e.FileName,
 			&e.DriveFileID,
 			&e.Score,

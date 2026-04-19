@@ -18,6 +18,7 @@ import (
 // Kullanıcı hesabı/login yoktur; her "oturum" kendi verisini taşır.
 type Rating struct {
 	ID            string    `json:"id"`
+	SessionID     string    `json:"session_id"`
 	ImageID       string    `json:"image_id"`
 	Score         int       `json:"score"`
 	Age           int       `json:"age"`
@@ -54,6 +55,7 @@ type RatingRepository interface {
 
 // RatingExport, CSV'ye dışa aktarılacak satırın formatı
 type RatingExport struct {
+	SessionID     string
 	FileName      string
 	DriveFileID   string
 	Score         int
@@ -79,11 +81,11 @@ type GenderDistribution struct {
 
 // DashboardStats, admin panelindeki tüm grafikleri ve sayaçları besler
 type DashboardStats struct {
-	TotalParticipants  int                 `json:"total_participants"`
-	TotalRatings       int                 `json:"total_ratings"`
-	KnowsArtistCount   int                 `json:"knows_artist_count"`
-	FollowsArtistCount int                 `json:"follows_artist_count"`
-	ScoreDistribution  []ScoreDistribution `json:"score_distribution"`
+	TotalParticipants  int                  `json:"total_participants"`
+	TotalRatings       int                  `json:"total_ratings"`
+	KnowsArtistCount   int                  `json:"knows_artist_count"`
+	FollowsArtistCount int                  `json:"follows_artist_count"`
+	ScoreDistribution  []ScoreDistribution  `json:"score_distribution"`
 	GenderDistribution []GenderDistribution `json:"gender_distribution"`
 }
 

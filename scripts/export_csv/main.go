@@ -9,7 +9,7 @@
 // Çıktı: dataset_export_YYYYMMDD_HHMMSS.csv
 //
 // CSV Kolonları:
-//   file_name, drive_file_id, score, age, gender, city, knows_artist, rated_at
+//   session_id, file_name, drive_file_id, score, age, gender, city, knows_artist, follows_artist, rated_at
 
 package main
 
@@ -50,6 +50,7 @@ func main() {
 	// Her puan kaydı için görselin adını da ekle
 	const query = `
 		SELECT
+			r.session_id,
 			i.file_name,
 			i.drive_file_id,
 			r.score,
@@ -57,6 +58,7 @@ func main() {
 			r.gender,
 			r.city,
 			r.knows_artist,
+			r.follows_artist,
 			r.created_at
 		FROM ratings r
 		JOIN images i ON i.id = r.image_id
@@ -88,6 +90,7 @@ func main() {
 
 	// Başlık satırı
 	headers := []string{
+		"session_id",
 		"file_name",
 		"drive_file_id",
 		"score",
@@ -95,6 +98,7 @@ func main() {
 		"gender",
 		"city",
 		"knows_artist",
+		"follows_artist",
 		"rated_at",
 	}
 	if err := writer.Write(headers); err != nil {
@@ -106,18 +110,21 @@ func main() {
 
 	for rows.Next() {
 		var (
-			fileName    string
-			driveFileID string
-			score       int
-			age         int
-			gender      string
-			city        string
-			knowsArtist bool
-			createdAt   time.Time
+			sessionID     string
+			fileName      string
+			driveFileID   string
+			score         int
+			age           int
+			gender        string
+			city          string
+			knowsArtist   bool
+			followsArtist bool
+			createdAt     time.Time
 		)
 
 		// rows.Scan: Her veritabanı sütununu karşılık gelen değişkene ata
 		if err := rows.Scan(
+			&sessionID,
 			&fileName,
 			&driveFileID,
 			&score,
@@ -125,6 +132,7 @@ func main() {
 			&gender,
 			&city,
 			&knowsArtist,
+			&followsArtist,
 			&createdAt,
 		); err != nil {
 			log.Printf("Satır okunamadı: %v", err)
@@ -136,8 +144,13 @@ func main() {
 		if knowsArtist {
 			knowsArtistStr = "true"
 		}
+		followsArtistStr := "false"
+		if followsArtist {
+			followsArtistStr = "true"
+		}
 
 		record := []string{
+			sessionID,
 			fileName,
 			driveFileID,
 			strconv.Itoa(score),
@@ -145,6 +158,7 @@ func main() {
 			gender,
 			city,
 			knowsArtistStr,
+			followsArtistStr,
 			createdAt.Format("2006-01-02T15:04:05Z"),
 		}
 

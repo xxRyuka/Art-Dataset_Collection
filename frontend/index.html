@@ -39,12 +39,10 @@
 
         html,
         body {
-            height: 100%;
+            min-height: 100%;
             font-family: 'Inter', sans-serif;
             background: var(--bg);
             color: var(--text);
-            overflow: hidden;
-            /* Sadece aktif ekran görünür */
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -65,12 +63,18 @@
             position: relative;
             z-index: 1;
             width: 100%;
-            height: 100dvh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 16px;
+            justify-content: flex-start;
+            padding: 24px 16px;
+        }
+
+        /* Welcome ve Done ekranları dikey ortalansın */
+        #screen-welcome,
+        #screen-done {
+            margin: auto 0;
         }
 
         /* ─── SCREENS ────────────────────────────────────────── */
@@ -80,6 +84,7 @@
             max-width: 430px;
             flex-direction: column;
             gap: 16px;
+            padding-bottom: 24px;
             animation: fadeSlideIn 0.35s cubic-bezier(.4, 0, .2, 1);
         }
 
@@ -252,14 +257,16 @@
             border-radius: var(--radius);
             overflow: hidden;
             background: var(--surface-2);
-            aspect-ratio: 4/3;
             position: relative;
+            /* Mobilde ekran yüksekliğinin %40'ı ile sınırla, masaüstünde 4/3 */
+            aspect-ratio: 4/3;
+            max-height: 42svh;
         }
 
         .img-wrap img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain; /* cover yerine contain: tüm görsel görünsün */
             display: block;
             transition: opacity .4s;
         }
@@ -581,15 +588,28 @@
            UYGULAMA DURUMU
            ═══════════════════════════════════════════════════════════ */
         const state = {
-            gender: null,   // Bilgi formundan seçilen cinsiyet
+            gender: null,        // Bilgi formundan seçilen cinsiyet
             followsArtist: null, // Takip ettiği sanatçı var mı?
-            imageId: null,   // Şu an gösterilen görselin UUID'si
+            sessionId: null,     // Bu 10'lu oturumun benzersiz UUID'si
+            imageId: null,       // Şu an gösterilen görselin UUID'si
             knowsArtist: false,  // Sanatçı tanınıyor mu?
-            selectedScore: null,  // Seçilen puan (1-10)
-            completed: 0,      // Bu oturumda tamamlanan rating sayısı
-            scores: [],     // Oturum puanları (istatistik için)
-            isSubmitting: false,  // Çift gönderimi önlemek için kilit
+            selectedScore: null, // Seçilen puan (1-10)
+            completed: 0,        // Bu oturumda tamamlanan rating sayısı
+            scores: [],          // Oturum puanları (istatistik için)
+            isSubmitting: false, // Çift gönderimi önlemek için kilit
         };
+
+        /* ═══════════════════════════════════════════════════════════
+           UUID v4 OLUŞTURUCU (session_id için)
+           ═══════════════════════════════════════════════════════════ */
+        function generateUUID() {
+            if (crypto && crypto.randomUUID) return crypto.randomUUID();
+            // Fallback for older browsers
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
 
         /* ═══════════════════════════════════════════════════════════
            EKRAN GEÇİŞİ
@@ -646,6 +666,9 @@
             // Kullanıcı bilgilerini kaydet
             state.age = age;
             state.city = city;
+
+            // Yeni oturum için session ID oluştur
+            state.sessionId = generateUUID();
 
             // Puanlama başlat
             state.completed = 0;
@@ -747,6 +770,7 @@
             state.isSubmitting = true;
 
             const body = {
+                session_id: state.sessionId,
                 image_id: state.imageId,
                 score: state.selectedScore,
                 age: state.age,
@@ -832,6 +856,8 @@
            TEKRAR OYLA: Bilgileri tekrar sormadan yeni oturum başlat
            ═══════════════════════════════════════════════════════════ */
         function restartSession() {
+            // Yeni bir oturum başlıyor → yeni session ID
+            state.sessionId = generateUUID();
             state.completed = 0;
             state.scores = [];
             buildScoreGrid();

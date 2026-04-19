@@ -68,22 +68,30 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 
 		// 002: ratings tablosu
 		`CREATE TABLE IF NOT EXISTS ratings (
-			id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			image_id      UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
-			score         SMALLINT NOT NULL CHECK (score BETWEEN 1 AND 10),
-			age           SMALLINT NOT NULL CHECK (age > 0 AND age < 120),
-			gender        VARCHAR(30) NOT NULL,
-			city          VARCHAR(150) NOT NULL,
-			knows_artist  BOOLEAN NOT NULL DEFAULT FALSE,
+			id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			session_id     UUID NOT NULL,
+			image_id       UUID NOT NULL REFERENCES images(id) ON DELETE CASCADE,
+			score          SMALLINT NOT NULL CHECK (score BETWEEN 1 AND 10),
+			age            SMALLINT NOT NULL CHECK (age > 0 AND age < 120),
+			gender         VARCHAR(30) NOT NULL,
+			city           VARCHAR(150) NOT NULL,
+			knows_artist   BOOLEAN NOT NULL DEFAULT FALSE,
 			follows_artist BOOLEAN NOT NULL DEFAULT FALSE,
-			created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+			created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 		);
 
 		-- image_id'ye göre sorgu hızını artırmak için index
-		CREATE INDEX IF NOT EXISTS idx_ratings_image_id ON ratings(image_id);`,
+		CREATE INDEX IF NOT EXISTS idx_ratings_image_id ON ratings(image_id);
+
+		-- Oturum bazında gruplama için session_id index
+		CREATE INDEX IF NOT EXISTS idx_ratings_session_id ON ratings(session_id);`,
 
 		// 003: existing database update
 		`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS follows_artist BOOLEAN NOT NULL DEFAULT FALSE;`,
+
+		// 004: session_id ekle — mevcut veritabanları için
+		`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS session_id UUID;
+		CREATE INDEX IF NOT EXISTS idx_ratings_session_id ON ratings(session_id);`,
 	}
 
 	for i, sql := range migrations {
