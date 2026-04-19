@@ -78,9 +78,8 @@
       display: none;
       width: 100%;
       max-width: 480px;
-      flex-grow: 1;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
       padding-top: 4px;
       padding-bottom: 32px;
       animation: fadeSlideIn 0.35s cubic-bezier(.4, 0, .2, 1);
@@ -146,22 +145,24 @@
     /* ── GÖRSEL — test edilecek kritik alan ── */
     .img-wrap {
       width: 100%;
-      flex-grow: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       min-height: 250px;
-      border-radius: var(--radius);
-      overflow: hidden;
       background: var(--surface-2);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 8px;
       position: relative;
     }
     .img-wrap img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      max-width: 100%;
+      max-height: 55vh;
       object-fit: contain;
+      border-radius: 8px;
       display: block;
       transition: opacity .4s;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     .img-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
     .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent-light); border-radius: 50%; animation: spin .8s linear infinite; }
