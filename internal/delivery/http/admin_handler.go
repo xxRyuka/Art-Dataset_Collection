@@ -54,6 +54,7 @@ func (h *AdminHandler) ExportCSV(c *gin.Context) {
 
 	// Write Headers
 	headers := []string{
+		"session_id",
 		"file_name",
 		"drive_file_id",
 		"score",
@@ -81,6 +82,7 @@ func (h *AdminHandler) ExportCSV(c *gin.Context) {
 		}
 
 		record := []string{
+			e.SessionID,
 			e.FileName,
 			e.DriveFileID,
 			strconv.Itoa(e.Score),
