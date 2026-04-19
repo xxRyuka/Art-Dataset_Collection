@@ -97,7 +97,7 @@ func (r *ratingRepository) Create(ctx context.Context, rating *domain.Rating) er
 func (r *ratingRepository) GetAllExports(ctx context.Context) ([]domain.RatingExport, error) {
 	const query = `
 		SELECT
-			r.session_id,
+			COALESCE(r.session_id::text, ''),
 			i.file_name,
 			i.drive_file_id,
 			r.score,
