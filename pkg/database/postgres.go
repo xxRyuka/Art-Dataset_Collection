@@ -83,8 +83,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool) error {
 		-- image_id'ye göre sorgu hızını artırmak için index
 		CREATE INDEX IF NOT EXISTS idx_ratings_image_id ON ratings(image_id);
 
-		-- Oturum bazında gruplama için session_id index
-		CREATE INDEX IF NOT EXISTS idx_ratings_session_id ON ratings(session_id);`,
+`,
 
 		// 003: existing database update
 		`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS follows_artist BOOLEAN NOT NULL DEFAULT FALSE;`,
