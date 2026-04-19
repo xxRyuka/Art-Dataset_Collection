@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<!--
+  ┌──────────────────────────────────────────────────────────┐
+  │  LAYOUT TEST DOSYASI — API OLMADAN TARAYICIDA TEST ET    │
+  │                                                          │
+  │  Nasıl kullanılır:                                       │
+  │  1. Bu dosyayı tarayıcıda aç (çift tıkla)               │
+  │  2. Ekranlar arası geçiş test edilebilir                 │
+  │  3. Görsel olarak gerçek bir Unsplash fotoğrafı kullanır │
+  │  4. Puanlama yaptıkça progress çalışır                   │
+  │  5. API çağrısı YAPILMAZ — tamamen offline çalışır       │
+  │                                                          │
+  │  Mobil test: Chrome DevTools → Ctrl+Shift+M              │
+  │  Cihaz seç: iPhone SE, iPhone 14, Samsung Galaxy...     │
+  └──────────────────────────────────────────────────────────┘
+-->
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>🧪 Layout Test — Sanat Algısı</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- index.html ile TAMAMEN AYNI CSS -->
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: rgba(255, 255, 255, 0.05);
+      --surface-2: rgba(255, 255, 255, 0.09);
+      --border: rgba(255, 255, 255, 0.08);
+      --accent: #7c3aed;
+      --accent-glow: rgba(124, 58, 237, 0.4);
+      --accent-light: #a78bfa;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --error: #f87171;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { height: 100%; }
+
+    body {
+      min-height: 100%;
+      overscroll-behavior: none;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 0%, rgba(124, 58, 237, 0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 50% at 80% 100%, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 32px;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      flex-grow: 1;
+      flex-direction: column;
+      gap: 14px;
+      padding-top: 4px;
+      padding-bottom: 32px;
+      animation: fadeSlideIn 0.35s cubic-bezier(.4, 0, .2, 1);
+    }
+    .screen.active { display: flex; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      backdrop-filter: blur(16px);
+    }
+
+    .title { font-size: 24px; font-weight: 700; line-height: 1.2; }
+    .subtitle { font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-top: 8px; }
+    .label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 16px;
+      background: var(--accent); color: #fff;
+      font-size: 16px; font-weight: 600;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer;
+      box-shadow: 0 0 28px var(--accent-glow);
+      transition: opacity .15s, transform .15s;
+    }
+    .btn:active { opacity: .85; transform: scale(.98); }
+    .btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+    .btn.secondary { background: var(--surface-2); color: var(--text); box-shadow: none; border: 1px solid var(--border); }
+
+    .input {
+      width: 100%; padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-size: 16px; font-family: inherit;
+      outline: none; transition: border-color .2s;
+    }
+    .input:focus { border-color: var(--accent-light); }
+    .input::placeholder { color: var(--text-muted); }
+
+    .pill-group { display: flex; gap: 8px; }
+    .pill {
+      flex: 1; padding: 12px 8px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-muted);
+      font-size: 14px; font-weight: 500; text-align: center;
+      cursor: pointer; transition: all .2s; user-select: none;
+    }
+    .pill.selected { background: rgba(124,58,237,.2); border-color: var(--accent-light); color: var(--accent-light); }
+
+    .progress-wrap { display: flex; align-items: center; gap: 12px; }
+    .progress-text { font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+    .progress-bar { flex: 1; height: 4px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--accent), var(--accent-light)); transition: width .4s cubic-bezier(.4,0,.2,1); }
+
+    /* ── GÖRSEL — test edilecek kritik alan ── */
+    .img-wrap {
+      width: 100%;
+      flex-grow: 1;
+      min-height: 250px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface-2);
+      position: relative;
+    }
+    .img-wrap img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: opacity .4s;
+    }
+    .img-spinner { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent-light); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toggle-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .toggle-label { font-size: 14px; color: var(--text-muted); }
+    .toggle-track { width: 52px; height: 28px; flex-shrink: 0; border-radius: 99px; cursor: pointer; background: var(--surface-2); border: 1.5px solid var(--border); position: relative; transition: background .2s, border-color .2s; }
+    .toggle-track.on { background: rgba(124,58,237,.35); border-color: var(--accent-light); }
+    .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--text-muted); transition: transform .2s, background .2s; }
+    .toggle-track.on .toggle-thumb { transform: translateX(24px); background: var(--accent-light); }
+
+    .score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .score-btn {
+      aspect-ratio: 1;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text-muted);
+      font-size: 18px; font-weight: 600; cursor: pointer;
+      transition: all .15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .score-btn:active { transform: scale(.9); }
+    .score-btn.selected { background: var(--accent); border-color: var(--accent); color: #fff; box-shadow: 0 0 18px var(--accent-glow); }
+
+    .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+    .stat-row:last-child { border-bottom: none; }
+    .stat-val { font-weight: 700; color: var(--accent-light); }
+
+    #toast {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--surface); border: 1px solid var(--border);
+      backdrop-filter: blur(16px); padding: 12px 20px;
+      border-radius: 99px; font-size: 14px; white-space: nowrap;
+      transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s; opacity: 0; z-index: 999;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    #toast.error { color: var(--error); border-color: var(--error); }
+
+    /* Test bilgi bandı */
+    #test-badge {
+      position: fixed; top: 10px; right: 10px; z-index: 9999;
+      background: rgba(124,58,237,.85); color: #fff;
+      font-size: 11px; font-weight: 700; padding: 4px 10px;
+      border-radius: 99px; backdrop-filter: blur(8px);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div id="test-badge">🧪 TEST MODU</div>
+
+<div id="app">
+
+  <!-- EKRAN 1: KARŞILAMA -->
+  <section class="screen active" id="screen-welcome">
+    <div style="text-align:center; padding:8px 0 4px;"></div>
+    <div class="card" style="text-align:center;">
+      <h1 class="title">Sanat Algısı Araştırması</h1>
+      <p class="subtitle">
+        Sana gösterilen <strong>10 sanat eserini</strong> 1–10 arası puanla.<br>
+        Kişisel sanat algısını ölçen bir veri seti oluşturuyoruz.
+      </p>
+    </div>
+    <button class="btn" onclick="goTo('screen-info')">
+      Başla <span style="font-size:18px">→</span>
+    </button>
+    <p style="font-size:12px; color:var(--text-muted); text-align:center;">
+      Kişisel veri paylaşılmaz. İsim sorulmaz.
+    </p>
+  </section>
+
+  <!-- EKRAN 2: BİLGİ FORMU -->
+  <section class="screen" id="screen-info">
+    <div class="card">
+      <h2 class="title" style="font-size:20px;">Hakkında</h2>
+      <p class="subtitle">Sadece bir kez. Tekrar sorulmaz.</p>
+    </div>
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Yaşın</div>
+      <input class="input" id="inp-age" type="number" min="5" max="110" placeholder="Örn: 24" inputmode="numeric" />
+    </div>
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Cinsiyet</div>
+      <div class="pill-group">
+        <div class="pill" onclick="selectPill(this)">Erkek</div>
+        <div class="pill" onclick="selectPill(this)">Kadın</div>
+        <div class="pill" onclick="selectPill(this)">Diğer</div>
+        <div class="pill" onclick="selectPill(this)" style="font-size:12px;">Belirtmem</div>
+      </div>
+    </div>
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Şehrin</div>
+      <input class="input" type="text" placeholder="Örn: İstanbul" />
+    </div>
+    <div class="card" style="gap:8px; display:flex; flex-direction:column;">
+      <div class="label">Aktif Olarak Takip Ettiğin Sanatçı Var Mı?</div>
+      <div class="pill-group">
+        <div class="pill" onclick="selectPill(this)">Evet</div>
+        <div class="pill" onclick="selectPill(this)">Hayır</div>
+      </div>
+    </div>
+    <button class="btn" onclick="startMockRating()">Oylama Başlasın</button>
+    <button class="btn secondary" onclick="goTo('screen-welcome')" style="margin-top:-4px;">← Geri</button>
+  </section>
+
+  <!-- EKRAN 3: OYLAMA -->
+  <section class="screen" id="screen-rating">
+    <div class="progress-wrap">
+      <span class="progress-text" id="progress-text">1 / 10</span>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill" style="width:10%"></div>
+      </div>
+    </div>
+
+    <!-- GÖRSEL — test odağı burası -->
+    <div class="img-wrap" id="img-wrap">
+      <div class="img-spinner" id="img-spinner"><div class="spinner"></div></div>
+      <img id="art-img" src="" alt="Sanat eseri" style="opacity:0;"
+           onload="imageLoaded()" onerror="imageError()" />
+    </div>
+
+    <div class="card" style="gap:14px; display:flex; flex-direction:column;">
+      <div class="toggle-wrap">
+        <span class="toggle-label">Bu eser/sanatçıyı tanıyor musun?</span>
+        <div class="toggle-track" id="knows-toggle" onclick="this.classList.toggle('on')">
+          <div class="toggle-thumb"></div>
+        </div>
+      </div>
+      <div>
+        <div class="label">Puanın</div>
+        <div class="score-grid" id="score-grid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EKRAN 4: TAMAMLANDI -->
+  <section class="screen" id="screen-done">
+    <div class="card" style="text-align:center;">
+      <h2 class="title">Teşekkürler!</h2>
+      <p class="subtitle">10 eser oylandı. Katkın veri setine eklendi.</p>
+    </div>
+    <div class="card" id="session-stats"></div>
+    <button class="btn" onclick="startMockRating()">Tekrar Oyla</button>
+    <button class="btn secondary" onclick="goTo('screen-welcome')">Ana Sayfa</button>
+  </section>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+  /* ── Mock görseller — Unsplash'ten sanat eserleri ── */
+  const MOCK_IMAGES = [
+    'https://images.unsplash.com/photo-1541701494587-cb58502866ab?w=800&q=80',  // soyut boyama
+    'https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?w=800&q=80',  // suluboya
+    'https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=800&q=80',  // heykel
+    'https://images.unsplash.com/photo-1577083288073-40892c0860a4?w=800&q=80',  // portre
+    'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',  // soyut
+    'https://images.unsplash.com/photo-1549887534-1541e9326578?w=800&q=80',  // müzik sanatı
+    'https://images.unsplash.com/photo-1615184697985-c9bde1b07da7?w=800&q=80',  // grafik sanat
+    'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=800&q=80',  // dijital sanat
+    'https://images.unsplash.com/photo-1578301978693-85fa9c0320b9?w=800&q=80',  // fresk
+    'https://images.unsplash.com/photo-1531913764164-f85c52e6e654?w=800&q=80',  // yağlı boya
+  ];
+
+  let completed = 0;
+  let scores = [];
+
+  function goTo(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function selectPill(el) {
+    el.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function buildScoreGrid() {
+    const grid = document.getElementById('score-grid');
+    grid.innerHTML = '';
+    for (let i = 1; i <= 10; i++) {
+      const btn = document.createElement('button');
+      btn.className = 'score-btn';
+      btn.textContent = i;
+      btn.onclick = () => selectScore(i, btn);
+      grid.appendChild(btn);
+    }
+  }
+
+  function selectScore(score, el) {
+    document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+    el.classList.add('selected');
+    scores.push(score);
+    setTimeout(() => {
+      completed++;
+      if (completed >= 10) {
+        showDone();
+      } else {
+        showToast('✓ Kaydedildi (test modu)');
+        loadMockImage();
+      }
+    }, 350);
+  }
+
+  function startMockRating() {
+    completed = 0;
+    scores = [];
+    buildScoreGrid();
+    goTo('screen-rating');
+    loadMockImage();
+  }
+
+  function loadMockImage() {
+    document.querySelectorAll('.score-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('knows-toggle').classList.remove('on');
+
+    const img = document.getElementById('art-img');
+    const spinner = document.getElementById('img-spinner');
+    img.style.opacity = '0';
+    spinner.style.display = 'flex';
+
+    // Rastgele Unsplash görseli yükle
+    const url = MOCK_IMAGES[completed % MOCK_IMAGES.length];
+    img.src = url + '&t=' + Date.now(); // cache bust
+
+    // Progress güncelle
+    document.getElementById('progress-text').textContent = `${completed + 1} / 10`;
+    document.getElementById('progress-fill').style.width = `${(completed / 10) * 100 + 10}%`;
+  }
+
+  function imageLoaded() {
+    document.getElementById('img-spinner').style.display = 'none';
+    document.getElementById('art-img').style.opacity = '1';
+  }
+
+  function imageError() {
+    document.getElementById('img-spinner').style.display = 'none';
+    showToast('Görsel yüklenemedi', true);
+  }
+
+  function showDone() {
+    const avg = (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1);
+    document.getElementById('session-stats').innerHTML = `
+      <div class="stat-row"><span>Oylanan eser</span><span class="stat-val">10 adet</span></div>
+      <div class="stat-row"><span>Ortalama puanın</span><span class="stat-val">${avg} / 10</span></div>
+      <div class="stat-row"><span>En yüksek</span><span class="stat-val">${Math.max(...scores)}</span></div>
+      <div class="stat-row"><span>En düşük</span><span class="stat-val">${Math.min(...scores)}</span></div>
+    `;
+    goTo('screen-done');
+  }
+
+  let toastTimer;
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.className = ''; }, 2200);
+  }
+</script>
+</body>
+</html>
